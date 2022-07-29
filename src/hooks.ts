@@ -7,11 +7,13 @@ export interface Ibtn {
     fileName: string;
     url: string;
     disabled: boolean;
+    count: string;
     setName: React.Dispatch<React.SetStateAction<string>>;
-    update: Function;
-    remove: Function;
-    disable: Function;
-    enable: Function;
+    update: (newName: Ibtn["name"], newUrl: Ibtn["url"]) => void;
+    remove: () => void;
+    disable: () => void;
+    enable: () => void;
+    setCount: (v: string | number) => void;
 }
 
 const useBtn = (id: string, btnName: string): Ibtn => {
@@ -20,20 +22,28 @@ const useBtn = (id: string, btnName: string): Ibtn => {
     const [fileName, setFileName] = useState("");
     const [url, setUrl] = useState("");
     const [disabled, setDisabled] = useState(true);
+    const [count, setCountInit] = useState("");
 
     const update = useCallback((newName: string, newUrl: string) => {
         setFileName(newName);
         setUrl(newUrl);
         setReady(true);
+        setDisabled(true);
     }, []);
 
-    const remove = useCallback(() => setReady(false), []);
+    const remove = useCallback(() => {
+        setReady(false);
+        setCountInit("");
+    }, []);
+
     const disable = useCallback(() => setDisabled(true), []);
     const enable = useCallback(() => setDisabled(false), []);
 
+    const setCount = useCallback((v: string | number) => setCountInit(`${v}`), []);
+
     return {
-        id, ready, name, fileName, url, disabled,
-        setName, update, remove, disable, enable
+        id, ready, name, fileName, url, disabled, count,
+        setName, update, remove, disable, enable, setCount
     };
 };
 

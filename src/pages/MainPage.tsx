@@ -12,11 +12,14 @@ const MakeBtn: React.FC<MakeBtnProps> = ({ btn, func }) => {
     return (
         <div className={`${btn.id} between`}>
             <button id={btn.id} disabled={btn.disabled} onClick={func}>{btn.name}</button>
+            <span>{btn.count}</span>
             {btn.ready && <a href={btn.url} download={btn.fileName}>{btn.fileName}</a>}
         </div>
     );
 };
 
+const keys = (o: simpleJSON) => Object.keys(o);
+const len = (o: simpleJSON) => keys(o).length;
 
 const MainPage: React.FC = () => {
     const [disDiff, setDisDiff] = useState(true);
@@ -41,6 +44,10 @@ const MainPage: React.FC = () => {
                 console.log(err);
             }
             setDisDiff(!(files.length === 2));
+
+            if (files.length === 2 && !diff) {
+                changeDiff();
+            }
         }
     };
 
@@ -54,35 +61,46 @@ const MainPage: React.FC = () => {
         let dublJson: simpleJSON = {};
         let mergedData: simpleJSON = {};
 
-        for (const newData of filesList) {
+        filesList.forEach((newData, i) => {
 
-            const dublArr = Object.keys(mergedData).filter(key => !diff === Object.keys(newData).includes(key));
-            for (const i of dublArr) {
-                if (diff) {
-                    dublJson[i] = mergedData[i];
-                    dubl = `Не найден: ${i}`;
-                } else {
-                    dubl = `Дубликат: ${i}\n` +
-                        `Предыдущее вхождение: ${mergedData[i]}\n` +
-                        `Текущее вхождение: ${newData[i]}`;
+            if (i > 0) {
+
+                const dublArr = [
+                    ...keys(mergedData).filter(key => !diff === keys(newData).includes(key)),
+                    ...keys(newData).filter(key => !diff === keys(mergedData).includes(key))];
+
+                const allData = { ...mergedData, ...newData };
+
+                for (const i of dublArr) {
+                    if (diff) {
+                        dublJson[i] = allData[i];
+                        dubl = `Не найден: ${i}`;
+                    } else {
+                        dubl = `Дубликат: ${i}\n` +
+                            `Предыдущее вхождение: ${mergedData[i]}\n` +
+                            `Текущее вхождение: ${newData[i]}`;
+                    }
+                    console.warn(dubl);
                 }
-                console.warn(dubl);
-            }
-            if (dublArr.length && !diff) {
-                alert("См консоль!");
+                if (dublArr.length && !diff) {
+                    alert("См консоль!");
+                }
             }
             mergedData = { ...mergedData, ...newData };
-        };
+        });
 
         // console.log("mergedData", mergedData);
-        const url = akt2json(diff ? dublJson : mergedData);
-        mergeBtn.update(`${diff ? "Diff" : "Merged"}.json`, url);
-        // if (!diff) {
-        convertBtn.enable();
-        csvBtn.enable();
-        // }
+        const data = diff ? dublJson : mergedData;
+        const dataLen = len(data);
+        mergeBtn.setCount(dataLen);
         mergeBtn.disable();
-        setMergedData(diff ? dublJson : mergedData);
+        if (dataLen) {
+            setMergedData(data);
+            const url = akt2json(data);
+            mergeBtn.update(`${diff ? "Diff" : "Merged"}.json`, url);
+            convertBtn.enable();
+            csvBtn.enable();
+        }
     }, [convertBtn, diff, filesList, mergeBtn, csvBtn]);
 
     const json2xls = useCallback(() => {
@@ -95,7 +113,6 @@ const MainPage: React.FC = () => {
 
         const url = akt2xls(akt_table, name);
         convertBtn.update(name, url);
-        convertBtn.disable();
     }, [convertBtn, finalData]);
 
     const json2csv = useCallback(() => {
@@ -103,9 +120,8 @@ const MainPage: React.FC = () => {
         const csv = Object.entries(finalData)
             .map(([key, val]) => [key, ...Object.values(val)].join(";")).join("\n");
 
-        const date = new Date();
         csvBtn.update(
-            `${diff ? "Diff" : "Merged"}ApplLog${date.toISOString()}.csv`,
+            `${diff ? "Diff" : "Merged"}.csv`,
             akt2csv(csv));
 
     }, [csvBtn, finalData, diff]);
@@ -129,10 +145,11 @@ const MainPage: React.FC = () => {
 
     const changeDiff = () => {
         mergeBtn.setName(diff ? "MERGE" : "DIFF");
-        setDiff(!diff);
+        setDiff(prev => !prev);
         partClearData();
         mergeBtn.enable();
         convertBtn.disable();
+        csvBtn.disable();
     };
 
     return (<>
