@@ -118,7 +118,7 @@ const MainPage: React.FC = () => {
     const json2csv = useCallback(() => {
 
         const csv = Object.entries(finalData)
-            .map(([key, val]) => [key, ...Object.values(val)].join(";")).join("\n");
+            .map(([key, val]) => [key, ...Object.values(val)].join(",")).join("\n");
 
         csvBtn.update(
             `${diff ? "Diff" : "Merged"}.csv`,
