@@ -83,7 +83,7 @@ const MainPage: React.FC = () => {
         // }
         mergeBtn.disable();
         setMergedData(diff ? dublJson : mergedData);
-    }, [convertBtn, diff, filesList, mergeBtn]);
+    }, [convertBtn, diff, filesList, mergeBtn, csvBtn]);
 
     const json2xls = useCallback(() => {
         const name = "Coverted.xls";
@@ -104,9 +104,11 @@ const MainPage: React.FC = () => {
             .map(([key, val]) => [key, ...Object.values(val)].join(";")).join("\n");
 
         const date = new Date();
-        csvBtn.update("ApplLog" + date.toISOString() + ".csv", akt2csv(csv));
+        csvBtn.update(
+            `${diff ? "Diff" : "Merged"}ApplLog${date.toISOString()}.csv`,
+            akt2csv(csv));
 
-    }, [csvBtn, finalData]);
+    }, [csvBtn, finalData, diff]);
 
     const clearData = () => {
         setFilesList([]);
