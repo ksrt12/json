@@ -44,15 +44,26 @@ function akt2json(json_data: simpleJSON) {
     return URL.createObjectURL(new Blob([JSON.stringify(json_data)], { type: 'application/json' }));
 }
 
+export function akt2csv(csv: any) {
+    return URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+}
+
 function addEntry(x: any, tgt: HTMLTableCellElement) {
-    if ((typeof x === 'string') || (typeof x === 'number')) {
-        tgt.appendChild(makeText("" + x));
-    } else if (Array.isArray(x)) {
-        for (const i of x) {
-            addEntry(i, tgt);
-        }
-    } else {
-        tgt.appendChild(x);
+    switch (typeof x) {
+        case "object":
+            if (x === null) {
+                tgt.appendChild(makeText(""));
+            } else if (Array.isArray(x)) {
+                for (const i of x) {
+                    addEntry(i, tgt);
+                }
+            } else {
+                tgt.appendChild(x);
+            }
+            break;
+        default:
+            tgt.appendChild(makeText("" + x));
+
     }
 }
 

@@ -1,6 +1,6 @@
 import { ChangeEvent, useCallback, useState } from "react";
 import { simpleJSON } from "../ts/interfaces";
-import { akt2json, akt2xls, makeBaseTable, readToText, tableRow } from "../ts/utils";
+import { akt2csv, akt2json, akt2xls, makeBaseTable, readToText, tableRow } from "../ts/utils";
 import useBtn, { Ibtn } from "../hooks";
 
 interface MakeBtnProps {
@@ -25,6 +25,7 @@ const MainPage: React.FC = () => {
     const [finalData, setMergedData] = useState({} as simpleJSON);
 
     const convertBtn = useBtn("convert", "JSON2XLS");
+    const csvBtn = useBtn("csv", "JSON2CSV");
     const mergeBtn = useBtn("merge", "MERGE");
 
     const loadFiles = (event: ChangeEvent<HTMLInputElement>) => {
@@ -73,14 +74,15 @@ const MainPage: React.FC = () => {
             mergedData = { ...mergedData, ...newData };
         };
 
-        console.log("mergedData", mergedData);
+        // console.log("mergedData", mergedData);
         const url = akt2json(diff ? dublJson : mergedData);
         mergeBtn.update(`${diff ? "Diff" : "Merged"}.json`, url);
-        if (!diff) {
-            convertBtn.enable();
-        }
+        // if (!diff) {
+        convertBtn.enable();
+        csvBtn.enable();
+        // }
         mergeBtn.disable();
-        setMergedData(mergedData);
+        setMergedData(diff ? dublJson : mergedData);
     }, [convertBtn, diff, filesList, mergeBtn]);
 
     const json2xls = useCallback(() => {
@@ -96,11 +98,22 @@ const MainPage: React.FC = () => {
         convertBtn.disable();
     }, [convertBtn, finalData]);
 
+    const json2csv = useCallback(() => {
+
+        const csv = Object.entries(finalData)
+            .map(([key, val]) => [key, ...Object.values(val)].join(";")).join("\n");
+
+        const date = new Date();
+        csvBtn.update("ApplLog" + date.toISOString() + ".csv", akt2csv(csv));
+
+    }, [csvBtn, finalData]);
+
     const clearData = () => {
         setFilesList([]);
         setDiff(false);
         mergeBtn.disable();
         convertBtn.disable();
+        csvBtn.disable();
         mergeBtn.setName("MERGE");
         partClearData();
         setMergedData({});
@@ -109,6 +122,7 @@ const MainPage: React.FC = () => {
     const partClearData = () => {
         mergeBtn.remove();
         convertBtn.remove();
+        csvBtn.remove();
     };
 
     const changeDiff = () => {
@@ -131,6 +145,7 @@ const MainPage: React.FC = () => {
             <input id="source" type="file" multiple accept="application/json" onChange={loadFiles} />
             <MakeBtn btn={mergeBtn} func={mergeJSONs} />
             <MakeBtn btn={convertBtn} func={json2xls} />
+            <MakeBtn btn={csvBtn} func={json2csv} />
         </div>
     </>);
 };
