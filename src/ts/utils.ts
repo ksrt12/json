@@ -1,4 +1,7 @@
-import { simpleJSON } from "./interfaces";
+import { allJSON } from "./interfaces";
+
+export const akt2json = (json_data: allJSON) => URL.createObjectURL(new Blob([JSON.stringify(json_data)], { type: 'application/json' }));
+export const akt2csv = (csv: any) => URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
 
 function makeButton(name: string, span_class?: string, abit?: boolean) {
     const a = document.createElement("a");
@@ -18,7 +21,7 @@ function makeButton(name: string, span_class?: string, abit?: boolean) {
     return a;
 }
 
-function makeDlink(name: string, source: simpleJSON | HTMLTableElement, form: string, rename = name) {
+function makeDlink(name: string, source: allJSON | HTMLTableElement, form: string, rename = name) {
     const xls = (source instanceof HTMLTableElement);
     const a = makeButton(`${rename}.${form}`, xls ? "fa-file-excel-o" : "fa-download");
     a.href = xls ? akt2xls(source, name) : akt2json(source);
@@ -38,14 +41,6 @@ function akt2xls(table: HTMLTableElement, name: string) {
         format = (s: string, c: Ictx) => s.replace(/{(\w+)}/g, (_, p: string) => c[p as keyof Ictx]);
 
     return uri + base64(format(template, ctx));
-}
-
-function akt2json(json_data: simpleJSON) {
-    return URL.createObjectURL(new Blob([JSON.stringify(json_data)], { type: 'application/json' }));
-}
-
-export function akt2csv(csv: any) {
-    return URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
 }
 
 function addEntry(x: any, tgt: HTMLTableCellElement) {
@@ -101,4 +96,4 @@ async function readToText(file: Blob): Promise<string> {
     });
 }
 
-export { makeBaseTable, tableRow, makeButton, makeDlink, akt2json, akt2xls, readToText };
+export { makeBaseTable, tableRow, makeButton, makeDlink, akt2xls, readToText };

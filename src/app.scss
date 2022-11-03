@@ -23,6 +23,13 @@ body {
                 display: flex;
                 align-items: center;
             }
+            
+            .myloader {
+                padding: 10px;
+                align-items: center;
+                justify-content: center;
+                width: auto;
+            }
         }
 
         li {
