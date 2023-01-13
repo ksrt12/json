@@ -99,7 +99,7 @@ const MainPage: React.FC = () => {
   };
 
   const reducer = useCallback((o: RootJSON | Faq | Comment | Program, result: simpleJSON = {}, finalKey = "") => {
-    Object.entries(o).forEach(([key, value]) => {
+    Object.entries(o).forEach(([key, value]: [string, string | typeof o]) => {
       if (Array.isArray(value) && value.length) {
         value.forEach((item, index) => {
           if (typeof item === "object" && item !== null) {
@@ -112,7 +112,7 @@ const MainPage: React.FC = () => {
         if (typeof value === "object" && value !== null) {
           reducer(value, result, `${finalKey}.${key}`);
         } else {
-          result[`${finalKey}.${key}`] = value || "";
+          result[`${finalKey}.${key}`] = ((value || "") + "").replaceAll('\n', '\\n');
         }
       }
     });
@@ -131,12 +131,8 @@ const MainPage: React.FC = () => {
 
     const convertedData = mergedData.map(item => ({ [item.id]: reducer(item.json) }));
 
-    console.log("convertedData", convertedData);
     const csv = convertedData.map(item => Object.entries(item).map(([id, json]) => Object.entries(json).map(([key, val]) => [id + key, val].join(separator)).join("\n"))).join("\n");
 
-    console.log(csv);
-
-    // const len = mergedData.length;
     if (csv.length) mergeBtn.update([`Converted.csv`, akt2csv(csv)]);
     // mergeBtn.disable(false);
 
