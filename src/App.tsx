@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Loader from "./components/Loader";
 import MainPage from "./pages/MainPage";
 import SSPVO from "./pages/SSPVO";
+import Table from "./pages/Table";
 import "./app.scss";
 
 const App: React.FC = () => {
@@ -12,6 +13,7 @@ const App: React.FC = () => {
                 <Routes>
                     <Route path="/main" element={<MainPage />} />
                     <Route path="/sspvo" element={<SSPVO />} />
+                    <Route path="/table" element={<Table />} />
                     <Route path="*" element={<Navigate to="/main" replace />} />
                 </Routes>
             </Suspense>
