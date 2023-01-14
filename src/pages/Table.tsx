@@ -1,5 +1,5 @@
 import { ChangeEvent, useCallback, useState } from "react";
-import { akt2csv, readToText } from "../ts/utils";
+import { akt2csv, mayBeNumber, readToText } from "../ts/utils";
 import useBtn from "../hooks/new";
 import MakeBtn from "../components/MakeBtn";
 import { simpleJSON } from "../ts/interfaces";
@@ -73,7 +73,8 @@ export interface RootJSON {
 
 
 const MainPage: React.FC = () => {
-  const [filesList, setFilesList] = useState([] as Table.RootObject[][]);
+  const [reverse, setReverse] = useState(false);
+  const [filesList, setFilesList] = useState<Table.RootObject[][]>([]);
   const [separator, setSeparator] = useState(";");
 
   const mergeBtn = useBtn("merge", "MERGE", false);
@@ -118,6 +119,22 @@ const MainPage: React.FC = () => {
     });
     return result;
   }, []);
+
+  const reverseReducer = (s: string[][]) => s.reduce((acc, [key, value]) => {
+    const keys = key.split(".");
+    const lastKey = keys.pop();
+    const lastObj = keys.reduce((obj, key, i) => {
+      if (mayBeNumber(keys[i + 1]).isNumber) {
+        //@ts-ignore
+        obj[key] = obj[key] || [];
+      }
+      //@ts-ignore
+      return obj[key] = obj[key] || {};
+    }, acc);
+    //@ts-ignore
+    lastObj[lastKey] = mayBeNumber(value).val;
+    return acc;
+  }, {});
 
   const mergeJSONs = useCallback((/*filesList: IJson[]*/) => {
 

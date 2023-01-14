@@ -1,3 +1,4 @@
+import { isNumber } from "util";
 import { allJSON } from "./interfaces";
 
 export const akt2json = (json_data: allJSON) => URL.createObjectURL(new Blob([JSON.stringify(json_data)], { type: 'application/json' }));
@@ -95,5 +96,12 @@ async function readToText(file: Blob): Promise<string> {
         tmpFR.readAsText(file);
     });
 }
+
+export const mayBeNumber = (str: string) => {
+    const y = str.trim();
+    const n = Number(y);
+    const isNumber = !isNaN(n);
+    return { isNumber, val: isNumber ? n : str };
+};
 
 export { makeBaseTable, tableRow, makeButton, makeDlink, akt2xls, readToText };
