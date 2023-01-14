@@ -1,5 +1,6 @@
 import { ChangeEvent, useCallback, useState } from "react";
-import { akt2csv, mayBeNumber, readToText } from "../ts/utils";
+import { ParseResult, parse } from "papaparse";
+import { akt2csv, akt2json, mayBeNumber, readToText } from "../ts/utils";
 import useBtn from "../hooks/new";
 import MakeBtn from "../components/MakeBtn";
 import { simpleJSON } from "../ts/interfaces";
@@ -75,9 +76,10 @@ export interface RootJSON {
 const MainPage: React.FC = () => {
   const [reverse, setReverse] = useState(false);
   const [filesList, setFilesList] = useState<Table.RootObject[][]>([]);
-  const [separator, setSeparator] = useState(";");
+  const [data, setData] = useState<string[][]>([]);
+  const [separator, setSeparator] = useState(";@");
 
-  const mergeBtn = useBtn("merge", "MERGE", false);
+  const mergeBtn = useBtn("merge", "JSON2CSV", false);
 
   const loadFiles = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -85,7 +87,7 @@ const MainPage: React.FC = () => {
     if (files) {
       try {
         for (const file of files) {
-          Promise.resolve(readToText(file)).then(parseJSON);
+          Promise.resolve(readToText(file)).then(reverse ? parseCSV : parseJSON);
         }
         mergeBtn.enable();
       } catch (err) {
@@ -99,11 +101,16 @@ const MainPage: React.FC = () => {
     setFilesList(prev => [preresult, ...prev]);
   };
 
+  const parseCSV = (str: string) => {
+    const preresult: ParseResult<string[]> = parse(str, { delimiter: separator });
+    setData(prev => [...preresult.data, ...prev]);
+  };
+
   const reducer = useCallback((o: RootJSON | Faq | Comment | Program, result: simpleJSON = {}, finalKey = "") => {
     Object.entries(o).forEach(([key, value]: [string, string | typeof o]) => {
       if (Array.isArray(value) && value.length) {
         value.forEach((item, index) => {
-          if (typeof item === "object" && item !== null) {
+          if (item !== null && typeof item === "object") {
             reducer(item, result, `${finalKey}.${key}.${index}`);
           } else {
             result[`${finalKey}.${key}.${index}`] = item || "";
@@ -113,7 +120,9 @@ const MainPage: React.FC = () => {
         if (typeof value === "object" && value !== null) {
           reducer(value, result, `${finalKey}.${key}`);
         } else {
-          result[`${finalKey}.${key}`] = ((value || "") + "").replaceAll('\n', '\\n');
+
+          result[`${finalKey}.${key}`] = ((value || "") + "").replaceAll('\n', '@n');
+          console.log(result[`${finalKey}.${key}`]);
         }
       }
     });
@@ -123,26 +132,26 @@ const MainPage: React.FC = () => {
   const reverseReducer = (s: string[][]) => s.reduce((acc, [key, value]) => {
     const keys = key.split(".");
     const lastKey = keys.pop();
-    const lastObj = keys.reduce((obj, key, i) => {
-      if (mayBeNumber(keys[i + 1]).isNumber) {
+    const lastObj = lastKey && keys.reduce((obj, key, i) => {
+      if (mayBeNumber(keys[i + 1]).isNumber || mayBeNumber(lastKey).isNumber) {
         //@ts-ignore
-        obj[key] = obj[key] || [];
+        return obj[key] = obj[key] || [];
       }
       //@ts-ignore
       return obj[key] = obj[key] || {};
     }, acc);
     //@ts-ignore
-    lastObj[lastKey] = mayBeNumber(value).val;
+    lastObj[lastKey] = mayBeNumber(value, "@n", "\n").val;
     return acc;
   }, {});
 
-  const mergeJSONs = useCallback((/*filesList: IJson[]*/) => {
+  const json2csv = useCallback((/*filesList: IJson[]*/) => {
 
     const mergedData = filesList.flat().map(f => ({
       id: f.json_id,
       json: JSON.parse(f.json
         .replaceAll('\n', '\\n')
-        .replaceAll('\r', '')
+        .replaceAll('\r', '\\n')
       ) as RootJSON
     }));
 
@@ -151,9 +160,16 @@ const MainPage: React.FC = () => {
     const csv = convertedData.map(item => Object.entries(item).map(([id, json]) => Object.entries(json).map(([key, val]) => [id + key, val].join(separator)).join("\n"))).join("\n");
 
     if (csv.length) mergeBtn.update([`Converted.csv`, akt2csv(csv)]);
-    // mergeBtn.disable(false);
+    mergeBtn.disable(false);
 
   }, [filesList, mergeBtn, reducer, separator]);
+
+  const csv2json = useCallback(() => {
+    const json = reverseReducer(data);
+    if (Object.keys(json).length) mergeBtn.update([`Converted.json`, akt2json(json)]);
+    mergeBtn.disable(false);
+
+  }, [data, mergeBtn]);
 
   const changeSeparator = (event: ChangeEvent<HTMLInputElement>) => {
     const newSeparator = event.target.value;
@@ -164,8 +180,15 @@ const MainPage: React.FC = () => {
 
   const clearData = () => {
     setFilesList([]);
+    setData([]);
     mergeBtn.disable();
     mergeBtn.remove();
+  };
+
+  const changeReverse = (rev: boolean) => {
+    setReverse(rev);
+    mergeBtn.setName(rev ? "CSV2JSON" : "JSON2CSV");
+    clearData();
   };
 
   return (<>
@@ -173,12 +196,16 @@ const MainPage: React.FC = () => {
       <p>Merge JSONs &amp; Convert to XLS</p>
     </div>
     <div id="main">
+      <div className="diff">
+        <input id="diff" type="checkbox" checked={reverse} onChange={() => changeReverse(!reverse)} />
+        Обратное преобразование
+      </div>
       <div className="sep">
         <p>Разделитель</p>
-        <input id="separator" type="text" onChange={changeSeparator} />
+        <input id="separator" type="text" placeholder=";@" onChange={changeSeparator} />
       </div>
-      <input id="source" type="file" multiple accept="application/json" onChange={loadFiles} />
-      <MakeBtn p={mergeBtn.p} func={mergeJSONs} />
+      <input id="source" type="file" multiple accept={reverse ? ".csv" : "application/json"} onChange={loadFiles} />
+      <MakeBtn p={mergeBtn.p} func={reverse ? csv2json : json2csv} />
     </div>
   </>);
 };
